@@ -22,24 +22,48 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 // Model registry
 // ---------------------------------------------------------------------------
 const MODELS = {
-  f1_car: {
-    title: "F1 race car — power principle",
-    glb: "models/f1_car/.f1_car.step.glb",
-    sidecar: "models/f1_car/.f1_car.step.js",
+  planetary_gearbox: {
+    title: "Planetary gearbox",
+    glb: "models/planetary_gearbox/.planetary_gearbox.step.glb",
+    sidecar: "models/planetary_gearbox/.planetary_gearbox.step.js",
     explainer:
-      "Each piston is pushed down by combustion. The connecting rod converts that linear push into a rotation of the crankshaft. The crankshaft drives the clutch and the longitudinal drive shaft, the differential turns that rotation 90° onto the rear axle, and the rear wheels turn the car.",
-    cameraStart: { distance: 8500, azimuth: 50, elevation: 22 },
-    cameraTarget: [0, 0, 400],
-    animationDurationSec: 4,
+      "Sun (yellow, input) drives three planet gears (orange, green, pink). The planets mesh with the fixed ring (cyan), so they roll along the ring while the carrier (violet, output) revolves slowly around the sun — a 5:1 reduction with Zs=12, Zp=18, Zr=48.",
+    cameraStart: { distance: 850, azimuth: -55, elevation: 18 },
+    cameraTarget: [0, 0, 0],
+    animationDurationSec: 6,
     primaryParam: "drive",
-    primaryRange: [0, 720]
+    primaryRange: [0, 1080]
+  },
+  drone: {
+    title: "Quadcopter — hover + spin",
+    glb: "models/drone/.drone.step.glb",
+    sidecar: "models/drone/.drone.step.js",
+    explainer:
+      "Four propellers spin at high rpm (FL & RR clockwise, FR & RL counter-clockwise, so the yaw torques cancel). The body bobs up and down in hover and gently pitches fore/aft as if the rider is nudging the stick — classic quadcopter X-configuration.",
+    cameraStart: { distance: 1900, azimuth: 35, elevation: 22 },
+    cameraTarget: [0, 0, 220],
+    animationDurationSec: 5,
+    primaryParam: "drive",
+    primaryRange: [0, 360]
+  },
+  geneva: {
+    title: "Geneva drive — intermittent motion",
+    glb: "models/geneva/.geneva.step.glb",
+    sidecar: "models/geneva/.geneva.step.js",
+    explainer:
+      "Driver (orange disc + yellow pin + red lock plate) rotates continuously. Every revolution the pin engages one slot of the cyan Maltese cross and pushes it through exactly 90°; the lock plate holds the cross still in between. Classic film-projector / index-table mechanism.",
+    cameraStart: { distance: 800, azimuth: -50, elevation: 22 },
+    cameraTarget: [80, 0, 0],
+    animationDurationSec: 8,
+    primaryParam: "drive",
+    primaryRange: [0, 1440]
   },
   bicycle: {
     title: "Bicycle — forward motion",
     glb: "models/bicycle/.bicycle.step.glb",
     sidecar: "models/bicycle/.bicycle.step.js",
     explainer:
-      "Push down a pedal → the crank arm rotates the chainring around the bottom bracket → the chain transfers that rotation to the rear cog → the cog spins the rear wheel → rolling friction at the contact patch translates the bike forward and rolls the front wheel along.",
+      "Pedal pushes crank → chainring rotates → chain pulls the rear cog → cog spins the rear wheel → rolling friction translates the bike forward, and the front wheel rolls along.",
     cameraStart: { distance: 3200, azimuth: 55, elevation: 18 },
     cameraTarget: [0, 0, 500],
     animationDurationSec: 4,
@@ -49,7 +73,7 @@ const MODELS = {
 };
 
 const urlParams = new URLSearchParams(location.search);
-const modelKey = urlParams.get("model") in MODELS ? urlParams.get("model") : "f1_car";
+const modelKey = MODELS[urlParams.get("model")] ? urlParams.get("model") : "planetary_gearbox";
 const model = MODELS[modelKey];
 
 document.getElementById("model-title").textContent = model.title;
@@ -70,7 +94,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0f172a);
+scene.background = new THREE.Color(0x1e3a8a);  // brighter navy, parts pop better
 
 const camera = new THREE.PerspectiveCamera(40, 1, 1, 60000);
 const controls = new OrbitControls(camera, canvas);
@@ -91,17 +115,17 @@ scene.add(fill);
   const r = 16000;
   const geo = new THREE.PlaneGeometry(r, r, 1, 1);
   const mat = new THREE.MeshStandardMaterial({
-    color: 0x1e293b,
-    roughness: 0.95,
-    metalness: 0.0
+    color: 0x312e81,         // indigo, contrasts with bright parts
+    roughness: 0.85,
+    metalness: 0.1
   });
   const floor = new THREE.Mesh(geo, mat);
   floor.position.set(0, 0, -1);
   scene.add(floor);
 
-  // Faint grid
-  const grid = new THREE.GridHelper(r, 40, 0x334155, 0x1f2937);
-  grid.rotation.x = Math.PI / 2;  // grid plane to XY (CAD ground)
+  // Brighter accent grid
+  const grid = new THREE.GridHelper(r, 40, 0x60a5fa, 0x4338ca);
+  grid.rotation.x = Math.PI / 2;
   grid.position.z = 0;
   scene.add(grid);
 }

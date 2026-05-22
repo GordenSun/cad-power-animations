@@ -104,20 +104,20 @@ export default {
       : 0;
     const rollT = [distance, 0, 0];
 
-    // ---- Styling (must re-apply each frame; see cadScene.resetParameterEffects) ----
-    effects.style("frame",       { color: "#0ea5e9" });   // sky blue
-    effects.style("fork",        { color: "#0369a1" });
-    effects.style("handlebar",   { color: "#1e293b" });
-    effects.style("seat",        { color: "#1f2937" });
-    effects.style("wheel_front", { color: "#111827" });   // tyre
-    effects.style("wheel_rear",  { color: "#111827" });
-    effects.style("crank_left",  { color: "#fbbf24" });   // brass crank arms
-    effects.style("crank_right", { color: "#fbbf24" });
-    effects.style("pedal_left",  { color: "#ef4444" });   // red pedals so motion reads
-    effects.style("pedal_right", { color: "#ef4444" });
-    effects.style("chainring",   { color: "#f59e0b", emissive: "#78350f", emissiveIntensity: 0.15 });
-    effects.style("rear_cog",    { color: "#f59e0b", emissive: "#78350f", emissiveIntensity: 0.15 });
-    effects.style("chain",       { color: "#94a3b8" });   // grey chain
+    // ---- Bright styling so every part stays readable on the dark viewer bg ----
+    effects.style("frame",       { color: "#22d3ee" });   // bright cyan
+    effects.style("fork",        { color: "#a78bfa" });   // violet
+    effects.style("handlebar",   { color: "#fde047" });   // bright yellow
+    effects.style("seat",        { color: "#f472b6" });   // hot pink
+    effects.style("wheel_front", { color: "#fb923c" });   // bright orange
+    effects.style("wheel_rear",  { color: "#fb923c" });
+    effects.style("crank_left",  { color: "#facc15", emissive: "#854d0e", emissiveIntensity: 0.25 });
+    effects.style("crank_right", { color: "#facc15", emissive: "#854d0e", emissiveIntensity: 0.25 });
+    effects.style("pedal_left",  { color: "#ef4444", emissive: "#7f1d1d", emissiveIntensity: 0.25 });
+    effects.style("pedal_right", { color: "#ef4444", emissive: "#7f1d1d", emissiveIntensity: 0.25 });
+    effects.style("chainring",   { color: "#fde047", emissive: "#a16207", emissiveIntensity: 0.3 });
+    effects.style("rear_cog",    { color: "#fde047", emissive: "#a16207", emissiveIntensity: 0.3 });
+    effects.style("chain",       { color: "#e2e8f0" });   // bright pale silver
 
     // ---- Frame + non-rotating bits: just slide forward when rolling ----
     for (const id of ["frame", "fork", "handlebar", "seat", "chain"]) {
