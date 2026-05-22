@@ -1,0 +1,4 @@
+interface:
+  display_name: "Render"
+  short_description: "Open CAD and robot files in Explorer and create snapshots."
+  default_prompt: "Use $render to start CAD Explorer and return review links for explicit CAD or robot-description files."

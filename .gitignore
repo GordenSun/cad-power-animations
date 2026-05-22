@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated CAD artifacts that aren't worth tracking
+# (.step files are useful, .step.glb is large but needed for the viewer)
+
+# Node modules (CAD Explorer viewer)
+.agents/skills/render/scripts/viewer/node_modules/
+.agents/skills/render/scripts/viewer/dist/
+
+# Local server logs
+*.log
+/tmp/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor state
+.idea/
+.vscode/
+
+# Site build output (regenerated from models/ on every build)
+site/models/
+
+# Site dependency cache, if any tooling drops one
+site/node_modules/

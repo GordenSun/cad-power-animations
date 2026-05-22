@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CAD Power Animations</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="site-title">
+    <strong>CAD Power Animations</strong>
+    <span class="muted">parametric build123d models · live three.js animations</span>
+  </div>
+  <a class="github-link" href="https://github.com" id="repo-link" target="_blank" rel="noopener">View on GitHub →</a>
+</header>
+
+<main class="gallery">
+  <a class="card" href="viewer.html?model=f1_car">
+    <div class="card-thumb" style="background-image:url('models/f1_car/renders/hero_iso.png')"></div>
+    <div class="card-body">
+      <h2>F1 race car</h2>
+      <p>Four-cylinder cut-away engine driving the crank, drive shaft, differential and rear wheels through a full 720° firing cycle.</p>
+      <span class="badge">power principle</span>
+    </div>
+  </a>
+
+  <a class="card" href="viewer.html?model=bicycle">
+    <div class="card-thumb" style="background-image:url('models/bicycle/renders/hero.png')"></div>
+    <div class="card-body">
+      <h2>Bicycle</h2>
+      <p>Crank + chainring + chain + cog + wheel drivetrain. Pedaling drives the rear wheel; the bike rolls forward without slipping.</p>
+      <span class="badge">forward motion</span>
+    </div>
+  </a>
+</main>
+
+<footer class="site-footer">
+  <p>Built with <a href="https://github.com/gumyr/build123d">build123d</a>, <a href="https://www.cadskills.xyz/">CAD Skills</a>, and <a href="https://threejs.org/">three.js</a>. Each model is one parametric Python file plus a JavaScript STEP-module sidecar — the same sidecar runs in the CAD Explorer locally and in this static viewer on GitHub Pages.</p>
+</footer>
+
+<script>
+// Auto-fill the GitHub link if this page is served from github.io
+(function () {
+  const host = location.hostname;
+  const m = host.match(/^([^.]+)\.github\.io$/);
+  if (m) {
+    const user = m[1];
+    const repo = location.pathname.replace(/^\/+|\/+$/g, "").split("/")[0] || "";
+    if (repo) {
+      document.getElementById("repo-link").href = `https://github.com/${user}/${repo}`;
+    }
+  }
+})();
+</script>
+</body>
+</html>

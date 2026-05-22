@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CAD viewer</title>
+<link rel="stylesheet" href="style.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body class="viewer-page">
+<header class="viewer-header">
+  <a class="back" href="./">← Back</a>
+  <h1 id="model-title">Loading…</h1>
+  <div class="header-actions">
+    <button id="play" type="button" title="Play / pause">▶ Play</button>
+    <button id="reset" type="button" title="Reset view">⤺ Reset view</button>
+  </div>
+</header>
+
+<div class="viewer-layout">
+  <div id="canvas-host">
+    <canvas id="render"></canvas>
+    <div id="status" class="status"></div>
+  </div>
+  <aside id="controls" class="controls">
+    <h2>Parameters</h2>
+    <div id="param-list" class="param-list"></div>
+    <h2>Power path</h2>
+    <p id="explainer" class="muted"></p>
+  </aside>
+</div>
+
+<script type="module" src="viewer.js"></script>
+</body>
+</html>
