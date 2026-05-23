@@ -69,6 +69,42 @@ const MODELS = {
     animationDurationSec: 4,
     primaryParam: "cadence",
     primaryRange: [0, 720]
+  },
+  robot_arm: {
+    title: "Robotic arm — 5-DOF forward kinematics",
+    glb: "models/robot_arm/.robot_arm.step.glb",
+    sidecar: "models/robot_arm/.robot_arm.step.js",
+    explainer:
+      "Five revolute joints — base yaw, shoulder, elbow, wrist pitch, tool roll — plus a parallel-jaw gripper that opens and closes. The trajectory parameter sweeps every axis through a smooth choreography; flip 'Manual joint control' to drive each joint individually.",
+    cameraStart: { distance: 1700, azimuth: 40, elevation: 18 },
+    cameraTarget: [250, 0, 250],
+    animationDurationSec: 8,
+    primaryParam: "drive",
+    primaryRange: [0, 360]
+  },
+  locomotive: {
+    title: "Steam locomotive — side-rod drivetrain",
+    glb: "models/locomotive/.locomotive.step.glb",
+    sidecar: "models/locomotive/.locomotive.step.js",
+    explainer:
+      "Piston pushes the main rod → main rod tilts and turns the front wheel's crank pin → the side rod ties all three drive wheels into one rigid phase → every wheel turns together. Classic Stephenson-era drivetrain in motion.",
+    cameraStart: { distance: 5500, azimuth: 50, elevation: 18 },
+    cameraTarget: [400, 0, 500],
+    animationDurationSec: 4,
+    primaryParam: "crank",
+    primaryRange: [0, 720]
+  },
+  solar_system: {
+    title: "Solar system — orbits + a tiny Earth/Moon chain",
+    glb: "models/solar_system/.solar_system.step.glb",
+    sidecar: "models/solar_system/.solar_system.step.js",
+    explainer:
+      "Mercury through Saturn orbit the Sun at roughly Keplerian speed ratios (rescaled for visual rhythm). Each planet also spins on its own axis, and the Moon is composed onto Earth's orbital frame so it always rides along — a one-line kinematic chain.",
+    cameraStart: { distance: 2400, azimuth: 55, elevation: 38 },
+    cameraTarget: [0, 0, 0],
+    animationDurationSec: 10,
+    primaryParam: "time",
+    primaryRange: [0, 360]
   }
 };
 
