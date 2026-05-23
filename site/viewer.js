@@ -101,7 +101,11 @@ const MODELS = {
     starfield: true,
     // Bloom only the truly bright pixels (the Sun's high emissive); the
     // starfield and reflected planet faces stay crisp.
-    bloom: { strength: 0.55, radius: 0.4, threshold: 0.92 }
+    bloom: { strength: 0.55, radius: 0.4, threshold: 0.92 },
+    // Default fit multiplier is 1.4 × bbox-diagonal; the solar system
+    // shrinks it to ~0.93 (= 1.4 / 1.5) so the whole system shows up
+    // about 50% bigger on first load.
+    cameraFitMultiplier: 0.93
   }
 };
 
@@ -384,7 +388,8 @@ for (const [occ, node] of occurrenceNodes) {
     controls.target.copy(center);
     const diag = size.length();
     const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
-    camera.position.copy(controls.target).addScaledVector(dir, diag * 1.4);
+    const fit = Number(model.cameraFitMultiplier) || 1.4;
+    camera.position.copy(controls.target).addScaledVector(dir, diag * fit);
   }
   controls.update();
   // Remember the framed pose so the Reset View button restores it exactly.
