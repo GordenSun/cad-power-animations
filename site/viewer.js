@@ -63,12 +63,14 @@ const MODELS = {
     glb: "models/bicycle/.bicycle.step.glb",
     sidecar: "models/bicycle/.bicycle.step.js",
     explainer:
-      "Pedal pushes crank → chainring rotates → chain pulls the rear cog → cog spins the rear wheel → rolling friction translates the bike forward, and the front wheel rolls along.",
+      "Pedal pushes crank → chainring rotates → chain pulls the rear cog → cog spins the rear wheel → rolling friction translates the bike forward, and the front wheel rolls along. Toggle 'Roll forward' on to see the bike actually slide along +X (camera follows the frame).",
     cameraStart: { distance: 3200, azimuth: 55, elevation: 18 },
     cameraTarget: [0, 0, 500],
     animationDurationSec: 4,
     primaryParam: "cadence",
-    primaryRange: [0, 720]
+    primaryRange: [0, 720],
+    showGround: true,
+    chaseX: "o1.1"  // frame
   },
   robot_arm: {
     title: "Robotic arm — 5-DOF forward kinematics",
@@ -80,7 +82,8 @@ const MODELS = {
     cameraTarget: [250, 0, 250],
     animationDurationSec: 8,
     primaryParam: "drive",
-    primaryRange: [0, 360]
+    primaryRange: [0, 360],
+    showGround: true
   },
   locomotive: {
     title: "Steam locomotive — side-rod drivetrain",
@@ -92,7 +95,8 @@ const MODELS = {
     cameraTarget: [400, 0, 500],
     animationDurationSec: 4,
     primaryParam: "crank",
-    primaryRange: [0, 720]
+    primaryRange: [0, 720],
+    showGround: true
   },
   solar_system: {
     title: "Solar system — orbits + a tiny Earth/Moon chain",
@@ -146,7 +150,12 @@ const fill = new THREE.DirectionalLight(0x60a5fa, 0.35);
 fill.position.set(-3000, -2000, 2500);
 scene.add(fill);
 
-// Floor / shadow plate (CAD coord: Z is up, XY is ground)
+// Floor / shadow plate (CAD coord: Z is up, XY is ground). Created up-front
+// but only added to the scene later when the model registry opts in via
+// `showGround: true`. Free-floating models (gears, drone, planets) get a
+// clean background instead of a misleading ground plane that they would
+// otherwise visually clip through.
+const ground = new THREE.Group();
 {
   const r = 16000;
   const geo = new THREE.PlaneGeometry(r, r, 1, 1);
@@ -157,13 +166,15 @@ scene.add(fill);
   });
   const floor = new THREE.Mesh(geo, mat);
   floor.position.set(0, 0, -1);
-  scene.add(floor);
+  ground.add(floor);
 
-  // Brighter accent grid
   const grid = new THREE.GridHelper(r, 40, 0x60a5fa, 0x4338ca);
   grid.rotation.x = Math.PI / 2;
   grid.position.z = 0;
-  scene.add(grid);
+  ground.add(grid);
+}
+if (model.showGround) {
+  scene.add(ground);
 }
 
 // Set initial camera from spherical coords in CAD space (Z up)
@@ -201,6 +212,10 @@ resize();
 // Load GLB + sidecar
 // ---------------------------------------------------------------------------
 setStatus("Loading model…");
+
+// Captured after the auto-fit step below; the "Reset view" button restores
+// this pose without recomputing through cameraStart math.
+let initialCameraPose = null;
 
 const loader = new GLTFLoader();
 const gltf = await new Promise((res, rej) => {
@@ -300,7 +315,9 @@ for (const [occ, node] of occurrenceNodes) {
 }
 
 // Center the model and fit the camera based ONLY on the loaded CAD parts
-// (not the floor/grid helpers which are huge).
+// (not the floor/grid helpers which are huge). Leave generous breathing
+// room so parts that swing further during animation (robot arm, planets,
+// piston etc) still stay inside the frame.
 {
   const box = new THREE.Box3();
   for (const wrapper of occurrenceWrappers.values()) {
@@ -312,9 +329,14 @@ for (const [occ, node] of occurrenceNodes) {
     controls.target.copy(center);
     const diag = size.length();
     const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
-    camera.position.copy(controls.target).addScaledVector(dir, diag * 0.95);
+    camera.position.copy(controls.target).addScaledVector(dir, diag * 1.4);
   }
   controls.update();
+  // Remember the framed pose so the Reset View button restores it exactly.
+  initialCameraPose = {
+    position: camera.position.clone(),
+    target: controls.target.clone()
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -633,12 +655,18 @@ setPlay(true);
 playBtn.addEventListener("click", () => setPlay(!playState.playing));
 
 document.getElementById("reset").addEventListener("click", () => {
-  setCameraFromSpherical(
-    model.cameraStart.distance,
-    model.cameraStart.azimuth,
-    model.cameraStart.elevation,
-    model.cameraTarget
-  );
+  if (initialCameraPose) {
+    camera.position.copy(initialCameraPose.position);
+    controls.target.copy(initialCameraPose.target);
+    controls.update();
+  } else {
+    setCameraFromSpherical(
+      model.cameraStart.distance,
+      model.cameraStart.azimuth,
+      model.cameraStart.elevation,
+      model.cameraTarget
+    );
+  }
 });
 
 // Helper: reset all wrappers to identity matrix and base style
@@ -653,6 +681,9 @@ function resetWrappers() {
 
 const animMeta = manifest.animations && Object.values(manifest.animations)[0];
 const duration = (animMeta?.duration || model.animationDurationSec || 4);
+
+// State for the opt-in chaseX camera follow.
+let lastChaseX = 0;
 
 function tick(now) {
   if (playState.lastFrameTime === 0) playState.lastFrameTime = now;
@@ -701,23 +732,21 @@ function tick(now) {
     }
   }
 
-  // Chase camera: pan target/position so the model stays in frame even when
-  // the sidecar translates it (e.g. bicycle roll_forward).
-  if (occurrenceWrappers.size && !controls._userInteracting) {
-    const box = new THREE.Box3();
-    for (const w of occurrenceWrappers.values()) {
-      if (w.visible) box.expandByObject(w);
-    }
-    if (Number.isFinite(box.min.x)) {
-      const center = box.getCenter(new THREE.Vector3());
-      const dx = center.x - controls.target.x;
-      const dy = center.y - controls.target.y;
-      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-        controls.target.x = center.x;
-        controls.target.y = center.y;
+  // Opt-in chase: only translate the camera along X when the model
+  // registry names a `chaseX` occurrence whose wrapper is being
+  // translated by the sidecar (e.g. bicycle frame when rolling forward).
+  // For everything else we leave the camera alone, which prevents the
+  // wobble caused by tracking a rotating model's bbox center.
+  if (model.chaseX && !controls._userInteracting) {
+    const wrapper = occurrenceWrappers.get(model.chaseX);
+    if (wrapper) {
+      const newX = wrapper.matrix.elements[12] || 0;
+      const dx = newX - lastChaseX;
+      if (Math.abs(dx) > 0.5) {
+        controls.target.x += dx;
         camera.position.x += dx;
-        camera.position.y += dy;
       }
+      lastChaseX = newX;
     }
   }
 
@@ -726,10 +755,8 @@ function tick(now) {
   requestAnimationFrame(tick);
 }
 
-// Pause chase while the user is interacting (so they can pan freely).
 controls.addEventListener("start", () => { controls._userInteracting = true; });
 controls.addEventListener("end",   () => {
-  // Resume chase after a short idle
   setTimeout(() => { controls._userInteracting = false; }, 800);
 });
 

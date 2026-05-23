@@ -52,8 +52,8 @@ export default {
       roll_forward: {
         type: "boolean",
         label: "Roll forward",
-        description: "Translate the whole bike along +X to show the resulting motion.",
-        default: true
+        description: "Translate the whole bike along +X to show the resulting motion. Off by default so the animation stays in frame.",
+        default: false
       },
       roll_scale: {
         type: "number",
@@ -97,7 +97,10 @@ export default {
     const rollScale = Math.max(Number(params.roll_scale) ?? 0.25, 0);
 
     const cadenceRad = cadenceDeg * DEG;
-    const wheelAngleDeg = -cadenceDeg * ratio;
+    // Forward pedaling: viewed from the right side of the bike, the cranks
+    // and wheels turn clockwise (top moves toward +X). Around the +Y axis
+    // that's a positive right-hand-rule rotation.
+    const wheelAngleDeg = cadenceDeg * ratio;
     // Forward distance from pure rolling: arc = wheel_radius * angle_rad
     const distance = roll
       ? cadenceRad * ratio * WHEEL_RADIUS * rollScale
@@ -125,11 +128,11 @@ export default {
     }
 
     // ---- Cranks + chainring: rotate around BB, then translate ----
-    // Rotation around +Y by -cadenceDeg keeps the "forward pedal goes up"
-    // visual matching a real bike when viewed from the right side (-Y).
+    // Positive rotation around +Y is "top moves toward +X" - the natural
+    // forward pedalling direction viewed from the right side of the bike.
     const crankSpec = {
       transforms: [
-        { rotate: { axis: [0, 1, 0], origin: BB, angleDeg: -cadenceDeg } },
+        { rotate: { axis: [0, 1, 0], origin: BB, angleDeg: cadenceDeg } },
         { translate: rollT }
       ]
     };
@@ -138,16 +141,16 @@ export default {
     effects.transform("chainring", crankSpec);
 
     // ---- Pedals: only translate (bearings keep them level) ----
-    // Left pedal initial position relative to BB is (0, +75, -CRANK_LENGTH).
-    // After rotating crank by -cadence around Y, the pedal mount lands at
-    //   ( CRANK_LENGTH*sin(cadence), +75, -CRANK_LENGTH*cos(cadence) )
-    // so the pedal must translate by the delta.
+    // Right pedal initial: (0, -75, +CRANK_LENGTH); after R_y(+cadence) it
+    // lands at ( L sin t, -75,  L cos t).  Left pedal initial:
+    // (0, +75, -CRANK_LENGTH); after R_y(+cadence) it lands at
+    // (-L sin t, +75, -L cos t).
     const sinT = Math.sin(cadenceRad);
     const cosT = Math.cos(cadenceRad);
-    const pedalDx = CRANK_LENGTH * sinT;
-    const pedalDz = CRANK_LENGTH * (1 - cosT);
-    effects.transform("pedal_left",  { translate: [ pedalDx + distance, 0,  pedalDz] });
-    effects.transform("pedal_right", { translate: [-pedalDx + distance, 0, -pedalDz] });
+    const pedalDx = CRANK_LENGTH * sinT;       // = L sin t
+    const oneMinusCos = CRANK_LENGTH * (1 - cosT);
+    effects.transform("pedal_right", { translate: [ pedalDx + distance, 0, -oneMinusCos] });
+    effects.transform("pedal_left",  { translate: [-pedalDx + distance, 0,  oneMinusCos] });
 
     // ---- Wheels + rear cog: rotate around hub, then translate ----
     effects.transform("wheel_rear", {
