@@ -17,6 +17,10 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
 // ---------------------------------------------------------------------------
 // Model registry
@@ -69,8 +73,7 @@ const MODELS = {
     animationDurationSec: 4,
     primaryParam: "cadence",
     primaryRange: [0, 720],
-    showGround: true,
-    chaseX: "o1.1"  // frame
+    chaseX: "o1.1"  // frame - only kicks in when Roll forward is on
   },
   robot_arm: {
     title: "Robotic arm — 5-DOF forward kinematics",
@@ -82,33 +85,23 @@ const MODELS = {
     cameraTarget: [250, 0, 250],
     animationDurationSec: 8,
     primaryParam: "drive",
-    primaryRange: [0, 360],
-    showGround: true
-  },
-  locomotive: {
-    title: "Steam locomotive — side-rod drivetrain",
-    glb: "models/locomotive/.locomotive.step.glb",
-    sidecar: "models/locomotive/.locomotive.step.js",
-    explainer:
-      "Piston pushes the main rod → main rod tilts and turns the front wheel's crank pin → the side rod ties all three drive wheels into one rigid phase → every wheel turns together. Classic Stephenson-era drivetrain in motion.",
-    cameraStart: { distance: 5500, azimuth: 50, elevation: 18 },
-    cameraTarget: [400, 0, 500],
-    animationDurationSec: 4,
-    primaryParam: "crank",
-    primaryRange: [0, 720],
-    showGround: true
+    primaryRange: [0, 360]
   },
   solar_system: {
-    title: "Solar system — orbits + a tiny Earth/Moon chain",
+    title: "Solar system — 8 planets, moons and a tilted Saturn",
     glb: "models/solar_system/.solar_system.step.glb",
     sidecar: "models/solar_system/.solar_system.step.js",
     explainer:
-      "Mercury through Saturn orbit the Sun at roughly Keplerian speed ratios (rescaled for visual rhythm). Each planet also spins on its own axis, and the Moon is composed onto Earth's orbital frame so it always rides along — a one-line kinematic chain.",
-    cameraStart: { distance: 2400, azimuth: 55, elevation: 38 },
+      "All eight planets orbit the Sun at Keplerian speed ratios (gently log-compressed for the outer giants). Earth's Moon and Jupiter's four Galilean moons — Io, Europa, Ganymede, Callisto — ride their parent planet's orbital frame. Saturn keeps its real 26.7° axial tilt; a thin asteroid belt sits between Mars and Jupiter; the Sun gets a corona pulse picked up by the bloom pass.",
+    cameraStart: { distance: 3200, azimuth: 55, elevation: 35 },
     cameraTarget: [0, 0, 0],
-    animationDurationSec: 10,
+    animationDurationSec: 16,
     primaryParam: "time",
-    primaryRange: [0, 360]
+    primaryRange: [0, 360],
+    starfield: true,
+    // Bloom only the truly bright pixels (the Sun's high emissive); the
+    // starfield and reflected planet faces stay crisp.
+    bloom: { strength: 0.55, radius: 0.4, threshold: 0.92 }
   }
 };
 
@@ -134,7 +127,9 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1e3a8a);  // brighter navy, parts pop better
+// Solar system gets a deep-space black so the starfield + bloom pop. Every
+// other model keeps the brighter navy so coloured parts have contrast.
+scene.background = new THREE.Color(model.starfield ? 0x05060a : 0x1e3a8a);
 
 const camera = new THREE.PerspectiveCamera(40, 1, 1, 60000);
 const controls = new OrbitControls(camera, canvas);
@@ -177,6 +172,47 @@ if (model.showGround) {
   scene.add(ground);
 }
 
+// Optional starfield: a sparse sphere of points way outside the scene so
+// distant stars stay put no matter where the user pans/zooms.
+if (model.starfield) {
+  // Lots of tiny, sub-1-pixel-ish stars with a realistic temperature mix.
+  // Brightness is kept well below the bloom threshold so they stay crisp
+  // points rather than fluffy blobs.
+  const STAR_COUNT = 3500;
+  const STAR_RADIUS = 32000;
+  const positions = new Float32Array(STAR_COUNT * 3);
+  const colors = new Float32Array(STAR_COUNT * 3);
+  for (let i = 0; i < STAR_COUNT; i += 1) {
+    const u = Math.random() * 2 - 1;
+    const theta = Math.random() * Math.PI * 2;
+    const s = Math.sqrt(1 - u * u);
+    positions[i * 3]     = STAR_RADIUS * s * Math.cos(theta);
+    positions[i * 3 + 1] = STAR_RADIUS * s * Math.sin(theta);
+    positions[i * 3 + 2] = STAR_RADIUS * u;
+    // Vary apparent brightness; most stars are dim, a few are noticeably bright.
+    const base = 0.35 + 0.45 * Math.pow(Math.random(), 3);  // skew toward dim
+    const tint = Math.random();
+    let r = base, g = base, b = base;
+    if (tint < 0.18) { b *= 1.15; g *= 1.05; }                    // blue-white
+    else if (tint > 0.85) { r *= 1.15; g *= 0.95; b *= 0.7; }     // warm orange
+    colors[i * 3] = Math.min(r, 0.85);
+    colors[i * 3 + 1] = Math.min(g, 0.85);
+    colors[i * 3 + 2] = Math.min(b, 0.85);
+  }
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  starGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const starMat = new THREE.PointsMaterial({
+    size: 1.2,
+    sizeAttenuation: false,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false
+  });
+  scene.add(new THREE.Points(starGeo, starMat));
+}
+
 // Set initial camera from spherical coords in CAD space (Z up)
 function setCameraFromSpherical(distance, azimuthDeg, elevationDeg, target) {
   const az = azimuthDeg * Math.PI / 180;
@@ -197,6 +233,23 @@ setCameraFromSpherical(
   model.cameraTarget
 );
 
+// Optional bloom post-processing (for the solar system sun glow).
+let composer = null;
+let bloomPass = null;
+if (model.bloom) {
+  const b = model.bloom;
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(1, 1),
+    Number(b.strength)  ?? 1.2,
+    Number(b.radius)    ?? 0.6,
+    Number(b.threshold) ?? 0.5
+  );
+  composer.addPass(bloomPass);
+  composer.addPass(new OutputPass());
+}
+
 function resize() {
   const host = canvas.parentElement;
   const w = host.clientWidth;
@@ -204,6 +257,8 @@ function resize() {
   renderer.setSize(w, h, false);
   camera.aspect = w / h || 1;
   camera.updateProjectionMatrix();
+  if (composer) composer.setSize(w, h);
+  if (bloomPass) bloomPass.setSize(w, h);
 }
 window.addEventListener("resize", resize);
 resize();
@@ -751,7 +806,11 @@ function tick(now) {
   }
 
   controls.update();
-  renderer.render(scene, camera);
+  if (composer) {
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
   requestAnimationFrame(tick);
 }
 
