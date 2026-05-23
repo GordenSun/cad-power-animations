@@ -87,42 +87,6 @@ const MODELS = {
     primaryParam: "drive",
     primaryRange: [0, 360]
   },
-  folding_chair: {
-    title: "Folding chair — scissor mechanism with movable hinge",
-    glb: "models/folding_chair/.folding_chair.step.glb",
-    sidecar: "models/folding_chair/.folding_chair.step.js",
-    explainer:
-      "Two pairs of crossed legs pivot around a shared hinge. Drag the 'Hinge position' slider to slide the pivot up or down each leg - the legs no longer meet at one point when the hinge is off-centre, which is exactly the trade-off you face when picking where to put a real scissor-fold bolt.",
-    cameraStart: { distance: 1500, azimuth: 45, elevation: 18 },
-    cameraTarget: [0, 0, 250],
-    animationDurationSec: 5,
-    primaryParam: "fold",
-    primaryRange: [0, 1]
-  },
-  spray_bottle: {
-    title: "Spray bottle — piston pump cycle",
-    glb: "models/spray_bottle/.spray_bottle.step.glb",
-    sidecar: "models/spray_bottle/.spray_bottle.step.js",
-    explainer:
-      "Pull the trigger → it swings around its pivot and shoves the piston through the pump chamber → the spray cone fans out the nozzle. Release and the trigger returns, the piston pulls back, the cycle repeats. The liquid fill level is its own slider so you can see the bottle drain (visually).",
-    cameraStart: { distance: 540, azimuth: 35, elevation: 12 },
-    cameraTarget: [40, 0, 130],
-    animationDurationSec: 3.5,
-    primaryParam: "drive",
-    primaryRange: [0, 360]
-  },
-  mech_simulator: {
-    title: "Mechanism sandbox — crank-slider · cam · gear pair",
-    glb: "models/mech_simulator/.mech_simulator.step.glb",
-    sidecar: "models/mech_simulator/.mech_simulator.step.js",
-    explainer:
-      "Three classical mechanisms running side by side off one shared input angle. The crank-slider obeys the real crank-slider equation, so dragging 'Crank radius' actually changes the slider stroke. 'Cam lift' rescales the follower amplitude. The 24/12-tooth gear pair keeps a fixed 2:1 ratio with B turning the opposite direction.",
-    cameraStart: { distance: 2200, azimuth: 45, elevation: 25 },
-    cameraTarget: [0, 0, 0],
-    animationDurationSec: 5,
-    primaryParam: "drive",
-    primaryRange: [0, 720]
-  },
   solar_system: {
     title: "Solar system — 8 planets, moons and a tilted Saturn",
     glb: "models/solar_system/.solar_system.step.glb",
